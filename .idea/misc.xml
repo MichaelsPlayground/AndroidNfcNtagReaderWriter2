@@ -5,6 +5,7 @@
       <map>
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="app/src/main/res/layout/activity_main_sample.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/activity_write_ciphertext.xml" value="0.2033514492753623" />
         <entry key="app/src/main/res/layout/activity_write_tag.xml" value="0.1" />
       </map>
     </option>

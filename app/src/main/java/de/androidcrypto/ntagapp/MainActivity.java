@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
         writeCiphertextIntent = new Intent(MainActivity.this, WriteCiphertext.class);
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
-
+/*
         readNdefMessage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         .format(DateTimeFormatter.ofPattern("uuuu.MM.dd HH.mm.ss"));
                 ndefMessage.setText(ndefMessageString + "\n" + timeNow);
             }
-        });
+        });*/
 
         writeNdefMessage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -214,7 +214,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
         super.onPointerCaptureChanged(hasCapture);
     }
 
-    private static String bytesToHex(byte[] bytes) {
+    public static String bytesToHex(byte[] bytes) {
         StringBuffer result = new StringBuffer();
         for (byte b : bytes) result.append(Integer.toString((b & 0xff) + 0x100, 16).substring(1));
         return result.toString();

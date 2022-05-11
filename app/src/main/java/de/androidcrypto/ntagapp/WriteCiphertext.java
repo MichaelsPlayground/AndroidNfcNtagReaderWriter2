@@ -13,11 +13,14 @@ import android.nfc.Tag;
 import android.nfc.TagLostException;
 import android.nfc.tech.Ndef;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -25,7 +28,8 @@ import java.time.format.DateTimeFormatter;
 public class WriteCiphertext extends AppCompatActivity  implements NfcAdapter.ReaderCallback{
 
     EditText plaintext, passphrase;
-    //TextView readContent;
+    Button encryptData;
+    TextView ciphertextBase64;
     //String ndefMessageString;
 
     private NfcAdapter mNfcAdapter;
@@ -37,8 +41,28 @@ public class WriteCiphertext extends AppCompatActivity  implements NfcAdapter.Re
 
         plaintext = findViewById(R.id.etPlaintext);
         passphrase = findViewById(R.id.etPassphrase);
+        encryptData = findViewById(R.id.btnEncryptData);
+        ciphertextBase64 = findViewById(R.id.tvCiphertext);
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
+
+        encryptData.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int passphraseLength = 0;
+                if (passphrase != null) {
+                    passphraseLength = passphrase.length();
+                }
+                //System.out.println("passphrase length: " + passphraseLength);
+                // todo check for minimum length
+                // get the passphrase as char[]
+                char[] passphraseChar = new char[passphraseLength];
+                passphrase.getText().getChars(0, passphraseLength, passphraseChar, 0);
+                byte[] saltIvCiphertext = CryptoManager.aes256GcmPbkdf2Sha256Encryption("test".getBytes(StandardCharsets.UTF_8), passphraseChar);
+                ciphertextBase64.setText(CryptoManager.base64Encoding(saltIvCiphertext));
+                System.out.println("*** decrypted: " + new String(CryptoManager.aes256GcmPbkdf2Sha256Decryption(saltIvCiphertext, passphraseChar)));
+            }
+        });
     }
 
     @Override
