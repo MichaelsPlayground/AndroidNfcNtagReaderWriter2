@@ -30,7 +30,7 @@
             android:layout_marginTop="24dp"
             android:layout_marginEnd="16dp"
             android:padding="10dp"
-            android:text="WARNING: if a NTAG is discovered the tag will be written on the NTAG without any further action !"
+            android:text="WARNING: if a NTAG is discovered the tag will be written to the NTAG without any further action !"
             android:textAlignment="center"
             android:textSize="16sp"
             android:textStyle="bold" />

@@ -25,12 +25,12 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class WriteCiphertext extends AppCompatActivity  implements NfcAdapter.ReaderCallback{
+public class WriteCiphertext extends AppCompatActivity implements NfcAdapter.ReaderCallback {
 
     EditText plaintext, passphrase;
     Button encryptData;
-    TextView ciphertextBase64;
-    //String ndefMessageString;
+    TextView salt, nonce, ciphertext; // data shown as hex string
+    byte[] saltBytes = new byte[0], nonceBytes = new byte[0], ciphertextBytes = new byte[0]; // real data
 
     private NfcAdapter mNfcAdapter;
 
@@ -42,25 +42,51 @@ public class WriteCiphertext extends AppCompatActivity  implements NfcAdapter.Re
         plaintext = findViewById(R.id.etPlaintext);
         passphrase = findViewById(R.id.etPassphrase);
         encryptData = findViewById(R.id.btnEncryptData);
-        ciphertextBase64 = findViewById(R.id.tvCiphertext);
+        salt = findViewById(R.id.tvSalt);
+        nonce = findViewById(R.id.tvNonce);
+        ciphertext = findViewById(R.id.tvCiphertext);
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
         encryptData.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                clearEncryptionData();
                 int passphraseLength = 0;
                 if (passphrase != null) {
                     passphraseLength = passphrase.length();
                 }
-                //System.out.println("passphrase length: " + passphraseLength);
-                // todo check for minimum length
                 // get the passphrase as char[]
                 char[] passphraseChar = new char[passphraseLength];
                 passphrase.getText().getChars(0, passphraseLength, passphraseChar, 0);
-                byte[] saltIvCiphertext = CryptoManager.aes256GcmPbkdf2Sha256Encryption("test".getBytes(StandardCharsets.UTF_8), passphraseChar);
-                ciphertextBase64.setText(CryptoManager.base64Encoding(saltIvCiphertext));
-                System.out.println("*** decrypted: " + new String(CryptoManager.aes256GcmPbkdf2Sha256Decryption(saltIvCiphertext, passphraseChar)));
+                if (passphraseLength < 1) {
+                    Toast.makeText(getApplicationContext(),
+                            "Enter a longer passphrase",
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                int plaintextLength = plaintext.getText().length();
+                if (plaintextLength < 1) {
+                    Toast.makeText(getApplicationContext(),
+                            "Enter a longer plaintext",
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (plaintextLength > 50) {
+                    Toast.makeText(getApplicationContext(),
+                            "Enter a shorter plaintext, maximum is 50 characters",
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                byte[][] result = CryptoManager.aes256GcmPbkdf2Sha256Encryption2(String.valueOf(plaintext.getText()).getBytes(StandardCharsets.UTF_8), passphraseChar);
+                salt.setText(bytesToHex(result[0]));
+                nonce.setText(bytesToHex(result[1]));
+                ciphertext.setText(bytesToHex(result[2]));
+                // real values for usage with NTAG writing
+                saltBytes = result[0];
+                nonceBytes = result[1];
+                ciphertextBytes = result[2];
+                System.out.println("*** decrypted: " + new String(CryptoManager.aes256GcmPbkdf2Sha256Decryption2(result[0], result[1], result[2], passphraseChar), StandardCharsets.UTF_8));
             }
         });
     }
@@ -69,7 +95,7 @@ public class WriteCiphertext extends AppCompatActivity  implements NfcAdapter.Re
     protected void onResume() {
         super.onResume();
 
-        if(mNfcAdapter!= null) {
+        if (mNfcAdapter != null) {
             Bundle options = new Bundle();
             // Work around for some broken Nfc firmware implementations that poll the card too fast
             options.putInt(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY, 250);
@@ -91,7 +117,7 @@ public class WriteCiphertext extends AppCompatActivity  implements NfcAdapter.Re
     @Override
     protected void onPause() {
         super.onPause();
-        if(mNfcAdapter!= null)
+        if (mNfcAdapter != null)
             mNfcAdapter.disableReaderMode(this);
     }
 
@@ -100,89 +126,87 @@ public class WriteCiphertext extends AppCompatActivity  implements NfcAdapter.Re
     // Use `runOnUiThread` method to change the UI from this method
     @Override
     public void onTagDiscovered(Tag tag) {
-        // Read and or write to Tag here to the appropriate Tag Technology type class
-        // in this example the card should be an Ndef Technology Type
-        Ndef mNdef = Ndef.get(tag);
+        // first check that ciphertext is present, if not give a message and return
+        if (checkCiphertextIsPresent() == false) {
+            runOnUiThread(() -> {
+                Toast.makeText(getApplicationContext(),
+                        "There is no ciphertext available. Enter the fields and press ENCRYPT",
+                        //"Enter data and encrypt",
+                        Toast.LENGTH_SHORT).show();
+            });
+        } else {
+            // the thread only runs when ciphertext is present
 
-        // Check that it is an Ndef capable card
-        if (mNdef != null) {
+            // Read and or write to Tag here to the appropriate Tag Technology type class
+            // in this example the card should be an Ndef Technology Type
+            Ndef mNdef = Ndef.get(tag);
 
-            // If we want to read
-            // As we did not turn on the NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
-            // We can get the cached Ndef message the system read for us.
+            // Check that it is an Ndef capable card
+            if (mNdef != null) {
 
-            //NdefMessage mNdefMessage = mNdef.getCachedNdefMessage();
-            //ndefMessageString = mNdefMessage.toString();
+                // If we want to read
+                // As we did not turn on the NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
+                // We can get the cached Ndef message the system read for us.
 
-            // Or if we want to write a Ndef message
-            // Create a Ndef text record
-            String headerString = "Encryption was done with AES-256 GCM PBKDF2 on ";
-            String timeNow = ZonedDateTime
-                    .now(ZoneId.systemDefault())
-                    .format(DateTimeFormatter.ofPattern("uuuu.MM.dd HH.mm.ss"));
-            NdefRecord ndefRecord1Text = NdefRecord.createTextRecord("en", headerString +
-                    timeNow);
+                //NdefMessage mNdefMessage = mNdef.getCachedNdefMessage();
+                //ndefMessageString = mNdefMessage.toString();
 
-            // todo setup the encryption with AES-256 GCM PBKDF2
-            //NdefRecord ndefRecord2ExternalSalt = NdefRecord.createExternal("de.androidcrypto", "salt", saltBytes);
-            //NdefRecord ndefRecord3ExternalIv = NdefRecord.createExternal("de.androidcrypto", "iv", ivBytes);
-            //NdefRecord ndefRecord4ExternalCiphertext = NdefRecord.createExternal("de.androidcrypto", "cipher", ciphertextBytes);
-            // Create a Ndef URI record
-            String uriString = "http://androidcrypto.bplaced.net";
-            NdefRecord ndefRecord5Uri = NdefRecord.createUri(uriString);
-            // Create a Ndef Android application record
-            String packageName = "de.androidcrypto.ntagapp";
-            NdefRecord ndefRecord6Aar = NdefRecord.createApplicationRecord(packageName);
+                // Or if we want to write a Ndef message
+                // Create a Ndef text record
+                String headerString = "Encryption was done with AES-256 GCM PBKDF2 on ";
+                String timeNow = ZonedDateTime
+                        .now(ZoneId.systemDefault())
+                        .format(DateTimeFormatter.ofPattern("uuuu.MM.dd HH.mm.ss"));
+                NdefRecord ndefRecord1Text = NdefRecord.createTextRecord("en", headerString +
+                        timeNow);
 
-            // Add to a NdefMessage
-            NdefMessage mMsg = new NdefMessage(ndefRecord1Text); // this gives exact 1 message with 1 record
-            //NdefMessage mMsg = new NdefMessage(ndefRecord1Text, ndefRecord2ExternalSalt, ndefRecord3ExternalIv, ndefRecord4ExternalCiphertext, ndefRecord5Uri, ndefRecord6Aar); // gives 1 message with 3 records
-            // Catch errors
+                NdefRecord ndefRecord2ExternalSalt = NdefRecord.createExternal("de.androidcrypto.aes256gcmpbkdf2", "salt", saltBytes);
+                NdefRecord ndefRecord3ExternalNonce = NdefRecord.createExternal("de.androidcrypto.aes256gcmpbkdf2", "nonce", nonceBytes);
+                NdefRecord ndefRecord4ExternalCiphertext = NdefRecord.createExternal("de.androidcrypto.aes256gcmpbkdf2", "ciphertext", ciphertextBytes);
+                // Create a Ndef URI record
+                String uriString = "http://androidcrypto.bplaced.net";
+                NdefRecord ndefRecord5Uri = NdefRecord.createUri(uriString);
+                // Create a Ndef Android application record
+                String packageName = "de.androidcrypto.ntagapp";
+                NdefRecord ndefRecord6Aar = NdefRecord.createApplicationRecord(packageName);
 
-            try {
-                mNdef.connect();
-                mNdef.writeNdefMessage(mMsg);
-                // Success if got to here
-                runOnUiThread(() -> {
-                    Toast.makeText(getApplicationContext(),
-                            "Write to NFC Success",
-                            Toast.LENGTH_SHORT).show();
-                });
-                // Make a Sound
+                // Add to a NdefMessage
+                //NdefMessage mMsg = new NdefMessage(ndefRecord1Text); // this gives exact 1 message with 1 record
+                NdefMessage mMsg = new NdefMessage(ndefRecord1Text, ndefRecord2ExternalSalt, ndefRecord3ExternalNonce, ndefRecord4ExternalCiphertext, ndefRecord5Uri, ndefRecord6Aar); // gives 1 message with 6 records
+                // Catch errors
+
                 try {
-                    Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-                    Ringtone r = RingtoneManager.getRingtone(getApplicationContext(),
-                            notification);
-                    r.play();
-                } catch (Exception e) {
-                    // Some error playing sound
-                }
-            } catch (FormatException e) {
-                runOnUiThread(() -> {
-                    Toast.makeText(getApplicationContext(),
-                            "FormatException: " + e,
-                            Toast.LENGTH_SHORT).show();
-                });
-                // if the NDEF Message to write is malformed
-            } catch (TagLostException e) {
-                runOnUiThread(() -> {
-                    Toast.makeText(getApplicationContext(),
-                            "TagLostException: " + e,
-                            Toast.LENGTH_SHORT).show();
-                });
-                // Tag went out of range before operations were complete
-            } catch (IOException e) {
-                // if there is an I/O failure, or the operation is cancelled
-                runOnUiThread(() -> {
-                    Toast.makeText(getApplicationContext(),
-                            "IOException: " + e,
-                            Toast.LENGTH_SHORT).show();
-                });
-            } finally {
-                // Be nice and try and close the tag to
-                // Disable I/O operations to the tag from this TagTechnology object, and release resources.
-                try {
-                    mNdef.close();
+                    mNdef.connect();
+                    mNdef.writeNdefMessage(mMsg);
+                    // Success if got to here
+                    runOnUiThread(() -> {
+                        Toast.makeText(getApplicationContext(),
+                                "Write to NFC Success",
+                                Toast.LENGTH_SHORT).show();
+                    });
+                    // Make a Sound
+                    try {
+                        Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                        Ringtone r = RingtoneManager.getRingtone(getApplicationContext(),
+                                notification);
+                        r.play();
+                    } catch (Exception e) {
+                        // Some error playing sound
+                    }
+                } catch (FormatException e) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(getApplicationContext(),
+                                "FormatException: " + e,
+                                Toast.LENGTH_SHORT).show();
+                    });
+                    // if the NDEF Message to write is malformed
+                } catch (TagLostException e) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(getApplicationContext(),
+                                "TagLostException: " + e,
+                                Toast.LENGTH_SHORT).show();
+                    });
+                    // Tag went out of range before operations were complete
                 } catch (IOException e) {
                     // if there is an I/O failure, or the operation is cancelled
                     runOnUiThread(() -> {
@@ -190,22 +214,35 @@ public class WriteCiphertext extends AppCompatActivity  implements NfcAdapter.Re
                                 "IOException: " + e,
                                 Toast.LENGTH_SHORT).show();
                     });
+                } finally {
+                    // Be nice and try and close the tag to
+                    // Disable I/O operations to the tag from this TagTechnology object, and release resources.
+                    try {
+                        mNdef.close();
+                    } catch (IOException e) {
+                        // if there is an I/O failure, or the operation is cancelled
+                        runOnUiThread(() -> {
+                            Toast.makeText(getApplicationContext(),
+                                    "IOException: " + e,
+                                    Toast.LENGTH_SHORT).show();
+                        });
+                    }
                 }
-            }
 
-            // Make a Sound
-            try {
-                Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-                Ringtone r = RingtoneManager.getRingtone(getApplicationContext(),
-                        notification);
-                r.play();
-            } catch (Exception e) {
-                runOnUiThread(() -> {
-                    Toast.makeText(getApplicationContext(),
-                            "Exception: " + e,
-                            Toast.LENGTH_SHORT).show();
-                });
-                // Some error playing sound
+                // Make a Sound
+                try {
+                    Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                    Ringtone r = RingtoneManager.getRingtone(getApplicationContext(),
+                            notification);
+                    r.play();
+                } catch (Exception e) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(getApplicationContext(),
+                                "Exception: " + e,
+                                Toast.LENGTH_SHORT).show();
+                    });
+                    // Some error playing sound
+                }
             }
         }
     }
@@ -213,6 +250,29 @@ public class WriteCiphertext extends AppCompatActivity  implements NfcAdapter.Re
     @Override
     public void onPointerCaptureChanged(boolean hasCapture) {
         super.onPointerCaptureChanged(hasCapture);
+    }
+
+    // checks that a complete set of data of ciphertext
+    // is available
+    private boolean checkCiphertextIsPresent() {
+        boolean saltAvailable = false;
+        boolean nonceAvailable = false;
+        boolean ciphertextAvailable = false;
+        boolean ciphertextIsPresent = false;
+        if (saltBytes.length > 31) saltAvailable = true;
+        if (nonceBytes.length > 11) nonceAvailable = true;
+        if (ciphertextBytes.length > 16) ciphertextAvailable = true;
+        if (saltAvailable && nonceAvailable && ciphertextAvailable) ciphertextIsPresent = true;
+        return ciphertextIsPresent;
+    }
+
+    private void clearEncryptionData() {
+        saltBytes = new byte[0];
+        nonceBytes = new byte[0];
+        ciphertextBytes = new byte[0];
+        salt.setText("");
+        nonce.setText("");
+        ciphertext.setText("");
     }
 
     private static String bytesToHex(byte[] bytes) {

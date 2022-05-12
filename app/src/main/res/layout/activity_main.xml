@@ -23,13 +23,24 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/tvInformation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:text="When a tag is discovered all NDEF messages are read and displayed. If an encryption dataset is found the data is displayed as well and a dialog will ask for a passphrase to decrypt the data."
+            android:textAlignment="center"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
             android:id="@+id/tvNdefMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="8dp"
-            android:hint="the NDEF formatted message comes here" />
+            android:hint="the NDEF formatted message comes here"
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/btnWriteNdefMessage"
@@ -38,7 +49,7 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="8dp"
-            android:text="write NDEF message" />
+            android:text="write simple NDEF message" />
 
         <Button
             android:id="@+id/btnWriteCiphertext"
@@ -47,7 +58,120 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="8dp"
-            android:text="write ciphertext" />
+            android:text="write ciphertext NDEF messages" />
+
+        <TextView
+            android:id="@+id/tvNdefCiphertextFound"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:text="The tag contains a complete ciphertext dataset, press the DECRYPT button to get the decrypted text."
+            android:textAlignment="center"
+            android:textColor="#FB1100"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="8dp"
+            android:text="Salt:"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvNdefSalt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:hint="the NDEF formatted salt comes here"
+            android:textSize="16sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="8dp"
+            android:text="Nonce:"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvNdefNonce"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:hint="the NDEF formatted nonce comes here"
+            android:textSize="16sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="8dp"
+            android:text="Ciphertext:"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvNdefCiphertext"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:hint="the NDEF formatted ciphertext comes here"
+            android:textSize="16sp" />
+
+        <EditText
+            android:id="@+id/etPassphraseDecryption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:ems="10"
+            android:hint="secret passphrase for decryption"
+            android:inputType="text"
+            android:minHeight="48dp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnDecryptCiphertext"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="8dp"
+            android:text="decrypt the ciphertext"
+            android:visibility="gone" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="8dp"
+            android:text="decrypted Plaintext:"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvPlaintextDecrypted"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:hint="the decrypted plaintext comes here"
+            android:textSize="16sp" />
 
     </LinearLayout>
 </ScrollView>
