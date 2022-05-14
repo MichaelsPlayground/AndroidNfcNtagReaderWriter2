@@ -47,7 +47,9 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
     byte[] plaintextBytes = new byte[0];
     EditText passphraseDecryption;
 
-    Intent writeNdefMessageIntent, writeCiphertextIntent;
+    Button nfcaLowLevelReading;
+
+    Intent writeNdefMessageIntent, writeCiphertextIntent, nfcaLowLevelReadingIntent;
 
     private NfcAdapter mNfcAdapter;
 
@@ -61,6 +63,9 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
         writeNdefMessageIntent = new Intent(MainActivity.this, WriteTag.class);
         writeCiphertext = findViewById(R.id.btnWriteCiphertext);
         writeCiphertextIntent = new Intent(MainActivity.this, WriteCiphertext.class);
+        nfcaLowLevelReading = findViewById(R.id.btnNfcaLowLevelReading);
+        nfcaLowLevelReadingIntent = new Intent(MainActivity.this, NfcaLowLevelReading.class);
+
 
         ciphertextFound = findViewById(R.id.tvNdefCiphertextFound);
         salt = findViewById(R.id.tvNdefSalt);
@@ -121,6 +126,13 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         plaintext.setText("Error on decryption (wrong passphrase ???), try again");
                     }
                 }
+            }
+        });
+
+        nfcaLowLevelReading.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(nfcaLowLevelReadingIntent);
             }
         });
     }

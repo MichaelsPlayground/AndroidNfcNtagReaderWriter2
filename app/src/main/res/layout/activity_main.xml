@@ -60,6 +60,15 @@
             android:layout_marginEnd="8dp"
             android:text="write ciphertext NDEF messages" />
 
+        <Button
+            android:id="@+id/btnNfcaLowLevelReading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="8dp"
+            android:text="NFCA low level reading" />
+
         <TextView
             android:id="@+id/tvNdefCiphertextFound"
             android:layout_width="match_parent"

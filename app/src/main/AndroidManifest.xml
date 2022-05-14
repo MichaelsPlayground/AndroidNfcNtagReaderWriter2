@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.NFC" />
 
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -11,6 +13,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AndroidNfcNtagReaderWriter">
+        <activity
+            android:name=".NfcaLowLevelReading"
+            android:exported="false" />
         <activity
             android:name=".WriteCiphertext"
             android:exported="false" />
