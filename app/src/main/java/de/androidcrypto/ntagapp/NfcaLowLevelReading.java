@@ -118,7 +118,7 @@ public class NfcaLowLevelReading extends AppCompatActivity implements NfcAdapter
                     (byte) 0x04  // page address
             });
             responseLength = response.length;
-            nfcaContentString = nfcaContentString + "\n" + "read block 05h";
+            nfcaContentString = nfcaContentString + "\n" + "read block 04h";
             nfcaContentString = nfcaContentString + "\n" + "responseLength: " + responseLength;
             nfcaContentString = nfcaContentString + "\n" + " d: " + bytesToHex(response);
 
