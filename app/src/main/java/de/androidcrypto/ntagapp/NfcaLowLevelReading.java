@@ -1,8 +1,10 @@
 package de.androidcrypto.ntagapp;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -14,8 +16,12 @@ import android.nfc.TagLostException;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NfcA;
 import android.os.Bundle;
+import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.text.method.ScrollingMovementMethod;
 import android.view.View;
+import android.widget.Button;
+import android.widget.Scroller;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,7 +33,10 @@ import java.util.Arrays;
 public class NfcaLowLevelReading extends AppCompatActivity implements NfcAdapter.ReaderCallback{
 
     TextView nfcaContent;
-
+    Button showDump;
+    byte[] tagContent; // holds the content of the complete tagContent after a dump
+    String tagContentString; // holds the content of the complete tagContent after a dump
+    boolean tagContentReadComplete = false;
     private NfcAdapter mNfcAdapter;
 
     @Override
@@ -35,8 +44,31 @@ public class NfcaLowLevelReading extends AppCompatActivity implements NfcAdapter
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_nfca_low_level_reading);
         nfcaContent = findViewById(R.id.tvNfcaContent);
+        showDump = findViewById(R.id.btnShowDump);
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
+
+        showDump.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog dialog = new AlertDialog.Builder(v.getContext())
+                        .setTitle("YOUR_TITLE")
+                        //.setMessage("YOUR_MSG")
+                        .setMessage(tagContentString)
+                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        })
+                        .setIcon(android.R.drawable.ic_dialog_info)
+                        .show();
+                TextView textView = (TextView) dialog.findViewById(android.R.id.message);
+                //textView.setMaxLines(5);
+                textView.setScroller(new Scroller(v.getContext()));
+                textView.setVerticalScrollBarEnabled(true);
+                textView.setMovementMethod(new ScrollingMovementMethod());
+            }
+        });
     }
 
 
@@ -91,8 +123,9 @@ public class NfcaLowLevelReading extends AppCompatActivity implements NfcAdapter
         try {
             nfca = NfcA.get(tag);
             if (nfca != null) {
-                Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                v.vibrate(200);
+                ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect.createOneShot(150,10));
+                //Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                //v.vibrate(200);
             }
 
             nfca.connect();
@@ -108,6 +141,37 @@ public class NfcaLowLevelReading extends AppCompatActivity implements NfcAdapter
             byte[] atqaData = nfca.getAtqa();
             nfcaContentString = nfcaContentString + "\n" + "read ATQA";
             nfcaContentString = nfcaContentString + "\n" + "atqaData: " + bytesToHex(atqaData);
+
+            // read complete storage = 888 bytes for NTAG216
+            // todo identify tag
+
+            tagContentReadComplete = false;
+            nfcaContentString = nfcaContentString + "\n" + "complete DUMP of NTAG216";
+            int nrOfBlocksToRead = 222; // on block has 4 bytes
+            int nrOfPagesToRead = nrOfBlocksToRead / 4; // with each read command 4 blocks got read = 16 byte
+            int nrOfBytesCapacity = 888;
+            int nrOfBytesArray = 1000; // we do need more space in the array as we read more data than available
+            int bytesStored = 0;
+            byte[] tagRead = new byte[nrOfBytesArray];
+            for (int i = 0; i < nrOfPagesToRead; i++) {
+                int blockNumber = i * 4; // reads 4 block at once
+                byte[] result = nfca.transceive(new byte[] {
+                        (byte)0x30,  // READ
+                        (byte)(blockNumber & 0x0ff)
+                });
+                //nfcaContentString = nfcaContentString + "\n" + "i:" + i + " " + bytesToHex(result);
+                //nfcaContentString = nfcaContentString + "\n" + "i:" + i + " " + new String(result);
+                System.arraycopy(result, 0, tagRead, bytesStored, result.length);
+                bytesStored = bytesStored + result.length;
+            }
+            // now get only the data that is maximal on the tag
+            tagContent = new byte[nrOfBytesCapacity];
+            tagContent = Arrays.copyOfRange(tagRead, 0, nrOfBytesCapacity);
+            String tagDump = HexDumpUtil.formatHexDump(tagContent, 0, tagContent.length);
+            tagContentString = tagDump;
+            nfcaContentString = nfcaContentString + "\n" + "tagContent length: " + bytesStored;
+            //nfcaContentString = nfcaContentString + "\n" + bytesToHex(tagContent);
+            nfcaContentString = nfcaContentString + "\n" + tagDump;
 
             int responseLength;
             // Get Page 04h
@@ -208,6 +272,7 @@ public class NfcaLowLevelReading extends AppCompatActivity implements NfcAdapter
 */
             try {
                 nfca.close();
+                tagContentReadComplete = true; // this is the right place to say it is complete
             } catch (IOException e) {
                 e.printStackTrace();
             }

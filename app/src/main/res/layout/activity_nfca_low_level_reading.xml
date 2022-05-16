@@ -82,6 +82,12 @@
             android:layout_marginEnd="8dp"
             android:hint="the result of the card operation comes here" />
 
+        <Button
+            android:id="@+id/btnShowDump"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Button" />
+
         <TextView
             android:id="@+id/tvNfcaWarning"
             android:layout_width="wrap_content"
@@ -90,7 +96,7 @@
             android:layout_marginTop="24dp"
             android:layout_marginEnd="16dp"
             android:padding="10dp"
-            android:text="WARNING: do not set any numbers here if you are not sure what you are doing. Giving a correct sector number will overwrite the data in this sector without any notice. If you do not want to write anything to the card set the write sector number to empty (NOT null) or 99 !"
+        android:text="WARNING: do not set any numbers here if you are not sure what you are doing. Giving a correct sector number will overwrite the data in this sector without any notice. If you do not want to write anything to the NTAG set the write sector number to empty (NOT null) or 99 !\nAvoid using block numbers 0, 1, 2 or 3 as this could damage your tag irreversible."
             android:textAlignment="center"
             android:textSize="16sp"
             android:textStyle="bold" />
