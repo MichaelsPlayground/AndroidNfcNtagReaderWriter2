@@ -502,4 +502,29 @@ public class NfcaLowLevelReading extends AppCompatActivity implements NfcAdapter
         return data;
     }
 
+/* https://stackoverflow.com/a/36277161/8166854
+
+You would then use something like this to read and update your tag:
+
+Read from block x to find out which section contains the vaild (newest) data -> section s.
+Read the data from section s and use it as current data.
+Write the new data to the other section (if s = 1: section 0; if s = 0: section 1).
+If the data was written successfully (and completely), update block x with the new section number.
+
+Low-level read and write commands look like this:
+
+READ /reads 4 blocks of 4 bytes each, so increment block number of 4:
+byte[] result = nfcA.transceive(new byte[] {
+        (byte)0x30,  // READ
+        (byte)(blockNumber & 0x0ff)
+});
+
+WRITE:
+byte[] result = nfcA.transceive(new byte[] {
+        (byte)0xA2,  // WRITE
+        (byte)(blockNumber & 0x0ff),
+        byte0, byte1, byte2, byte3
+});
+*/
+
 }
